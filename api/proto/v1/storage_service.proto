@@ -1,0 +1,31 @@
+syntax = "proto3";
+option go_package = "github.com/my-epoch/storage_service/gen";
+package storage_service_api;
+
+import "google/api/annotations.proto";
+import "google/api/httpbody.proto";
+
+message FileUploadResponse {
+  string uuid = 1;
+  string extension = 2;
+  uint32 size = 3;
+}
+
+message GetRawFileRequest {
+  string uuid = 1;
+}
+
+service StorageServiceAPI {
+  rpc UploadFile(stream google.api.HttpBody) returns (FileUploadResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/storage"
+      body: "*"
+    };
+  }
+
+  rpc GetRawFile(GetRawFileRequest) returns (stream google.api.HttpBody) {
+    option (google.api.http) = {
+      get: "/api/v1/storage/{uuid}"
+    };
+  }
+}

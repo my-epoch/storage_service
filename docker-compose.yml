@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  storage_service:
+    container_name: storage_service
+    restart: unless-stopped
+    build: .
+    ports:
+      - "50051:50051"
+    networks:
+      consul-dc_mynet:
+        ipv4_address: 172.20.0.11
+    dns:
+      - "172.20.0.5"
+      - "8.8.8.8"
+      - "8.8.8.4"
+
+networks:
+  consul-dc_mynet:
+    external: true

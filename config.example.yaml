@@ -1,0 +1,8 @@
+# service config
+name: object
+addr: "addr"
+port: 50050
+check:
+  GRPC: "addr:port"
+  interval: "20s"
+  timeout: "5s"
