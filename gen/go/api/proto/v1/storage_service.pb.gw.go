@@ -15,7 +15,6 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
-	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
@@ -32,46 +31,36 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_StorageServiceAPI_UploadFile_0(ctx context.Context, marshaler runtime.Marshaler, client StorageServiceAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_StorageServiceAPI_UploadBase64EncodedFile_0(ctx context.Context, marshaler runtime.Marshaler, client StorageServiceAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq Base64FileUploadRequest
 	var metadata runtime.ServerMetadata
-	stream, err := client.UploadFile(ctx)
-	if err != nil {
-		grpclog.Infof("Failed to start streaming: %v", err)
-		return nil, metadata, err
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	dec := marshaler.NewDecoder(req.Body)
-	for {
-		var protoReq httpbody.HttpBody
-		err = dec.Decode(&protoReq)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			grpclog.Infof("Failed to decode request: %v", err)
-			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-		}
-		if err = stream.Send(&protoReq); err != nil {
-			if err == io.EOF {
-				break
-			}
-			grpclog.Infof("Failed to send request: %v", err)
-			return nil, metadata, err
-		}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	if err := stream.CloseSend(); err != nil {
-		grpclog.Infof("Failed to terminate client stream: %v", err)
-		return nil, metadata, err
-	}
-	header, err := stream.Header()
-	if err != nil {
-		grpclog.Infof("Failed to get header from client: %v", err)
-		return nil, metadata, err
-	}
-	metadata.HeaderMD = header
+	msg, err := client.UploadBase64EncodedFile(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
 
-	msg, err := stream.CloseAndRecv()
-	metadata.TrailerMD = stream.Trailer()
+}
+
+func local_request_StorageServiceAPI_UploadBase64EncodedFile_0(ctx context.Context, marshaler runtime.Marshaler, server StorageServiceAPIServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq Base64FileUploadRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.UploadBase64EncodedFile(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -116,11 +105,28 @@ func request_StorageServiceAPI_GetRawFile_0(ctx context.Context, marshaler runti
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterStorageServiceAPIHandlerFromEndpoint instead.
 func RegisterStorageServiceAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, server StorageServiceAPIServer) error {
 
-	mux.Handle("POST", pattern_StorageServiceAPI_UploadFile_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
-		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-		return
+	mux.Handle("POST", pattern_StorageServiceAPI_UploadBase64EncodedFile_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/storage_service_api.StorageServiceAPI/UploadBase64EncodedFile", runtime.WithHTTPPathPattern("/api/v1/storage/base64"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_StorageServiceAPI_UploadBase64EncodedFile_0(ctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_StorageServiceAPI_UploadBase64EncodedFile_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
 	})
 
 	mux.Handle("GET", pattern_StorageServiceAPI_GetRawFile_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -171,24 +177,24 @@ func RegisterStorageServiceAPIHandler(ctx context.Context, mux *runtime.ServeMux
 // "StorageServiceAPIClient" to call the correct interceptors.
 func RegisterStorageServiceAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, client StorageServiceAPIClient) error {
 
-	mux.Handle("POST", pattern_StorageServiceAPI_UploadFile_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_StorageServiceAPI_UploadBase64EncodedFile_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/storage_service_api.StorageServiceAPI/UploadFile", runtime.WithHTTPPathPattern("/api/v1/storage"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/storage_service_api.StorageServiceAPI/UploadBase64EncodedFile", runtime.WithHTTPPathPattern("/api/v1/storage/base64"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_StorageServiceAPI_UploadFile_0(ctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_StorageServiceAPI_UploadBase64EncodedFile_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_StorageServiceAPI_UploadFile_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_StorageServiceAPI_UploadBase64EncodedFile_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -217,13 +223,13 @@ func RegisterStorageServiceAPIHandlerClient(ctx context.Context, mux *runtime.Se
 }
 
 var (
-	pattern_StorageServiceAPI_UploadFile_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "storage"}, ""))
+	pattern_StorageServiceAPI_UploadBase64EncodedFile_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "storage", "base64"}, ""))
 
 	pattern_StorageServiceAPI_GetRawFile_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "storage", "uuid"}, ""))
 )
 
 var (
-	forward_StorageServiceAPI_UploadFile_0 = runtime.ForwardResponseMessage
+	forward_StorageServiceAPI_UploadBase64EncodedFile_0 = runtime.ForwardResponseMessage
 
 	forward_StorageServiceAPI_GetRawFile_0 = runtime.ForwardResponseStream
 )

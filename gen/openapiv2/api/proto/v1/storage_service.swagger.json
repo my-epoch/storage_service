@@ -16,9 +16,9 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/storage": {
+    "/api/v1/storage/base64": {
       "post": {
-        "operationId": "StorageServiceAPI_UploadFile",
+        "operationId": "StorageServiceAPI_UploadBase64EncodedFile",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -36,11 +36,10 @@
         "parameters": [
           {
             "name": "body",
-            "description": " (streaming inputs)",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/apiHttpBody"
+              "$ref": "#/definitions/storage_service_apiBase64FileUploadRequest"
             }
           }
         ],
@@ -140,6 +139,15 @@
           }
         }
       }
+    },
+    "storage_service_apiBase64FileUploadRequest": {
+      "type": "object",
+      "properties": {
+        "base64FileEncoded": {
+          "type": "string"
+        }
+      },
+      "title": "I know that its stupid, I will redo this later"
     },
     "storage_service_apiFileUploadResponse": {
       "type": "object",

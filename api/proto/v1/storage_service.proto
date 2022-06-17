@@ -5,6 +5,11 @@ package storage_service_api;
 import "google/api/annotations.proto";
 import "google/api/httpbody.proto";
 
+// I know that its stupid, I will redo this later
+message Base64FileUploadRequest {
+  string base64_file_encoded = 1;
+}
+
 message FileUploadResponse {
   string uuid = 1;
   string extension = 2;
@@ -16,9 +21,9 @@ message GetRawFileRequest {
 }
 
 service StorageServiceAPI {
-  rpc UploadFile(stream google.api.HttpBody) returns (FileUploadResponse) {
+  rpc UploadBase64EncodedFile(Base64FileUploadRequest) returns (FileUploadResponse) {
     option (google.api.http) = {
-      post: "/api/v1/storage"
+      post: "/api/v1/storage/base64"
       body: "*"
     };
   }
