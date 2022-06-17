@@ -3,6 +3,7 @@ module github.com/my-epoch/storage_service
 go 1.18
 
 require (
+	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.0
 	github.com/my-epoch/api-gateway v0.0.0-20220606065658-42d9cfa4b43e
 	github.com/my-epoch/object_service v0.0.0-20220616011635-145603064d1b
@@ -14,6 +15,7 @@ require (
 require (
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/consul/api v1.13.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
