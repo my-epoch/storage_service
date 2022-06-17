@@ -12,8 +12,7 @@ message Base64FileUploadRequest {
 
 message FileUploadResponse {
   string uuid = 1;
-  string extension = 2;
-  uint32 size = 3;
+  uint32 size = 2;
 }
 
 message GetRawFileRequest {
@@ -28,7 +27,7 @@ service StorageServiceAPI {
     };
   }
 
-  rpc GetRawFile(GetRawFileRequest) returns (stream google.api.HttpBody) {
+  rpc GetRawFile(GetRawFileRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {
       get: "/api/v1/storage/{uuid}"
     };

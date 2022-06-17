@@ -65,7 +65,7 @@ func local_request_StorageServiceAPI_UploadBase64EncodedFile_0(ctx context.Conte
 
 }
 
-func request_StorageServiceAPI_GetRawFile_0(ctx context.Context, marshaler runtime.Marshaler, client StorageServiceAPIClient, req *http.Request, pathParams map[string]string) (StorageServiceAPI_GetRawFileClient, runtime.ServerMetadata, error) {
+func request_StorageServiceAPI_GetRawFile_0(ctx context.Context, marshaler runtime.Marshaler, client StorageServiceAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRawFileRequest
 	var metadata runtime.ServerMetadata
 
@@ -86,16 +86,34 @@ func request_StorageServiceAPI_GetRawFile_0(ctx context.Context, marshaler runti
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "uuid", err)
 	}
 
-	stream, err := client.GetRawFile(ctx, &protoReq)
-	if err != nil {
-		return nil, metadata, err
+	msg, err := client.GetRawFile(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_StorageServiceAPI_GetRawFile_0(ctx context.Context, marshaler runtime.Marshaler, server StorageServiceAPIServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetRawFileRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["uuid"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uuid")
 	}
-	header, err := stream.Header()
+
+	protoReq.Uuid, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, err
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "uuid", err)
 	}
-	metadata.HeaderMD = header
-	return stream, metadata, nil
+
+	msg, err := server.GetRawFile(ctx, &protoReq)
+	return msg, metadata, err
 
 }
 
@@ -130,10 +148,27 @@ func RegisterStorageServiceAPIHandlerServer(ctx context.Context, mux *runtime.Se
 	})
 
 	mux.Handle("GET", pattern_StorageServiceAPI_GetRawFile_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
-		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-		return
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/storage_service_api.StorageServiceAPI/GetRawFile", runtime.WithHTTPPathPattern("/api/v1/storage/{uuid}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_StorageServiceAPI_GetRawFile_0(ctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_StorageServiceAPI_GetRawFile_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
 	})
 
 	return nil
@@ -215,7 +250,7 @@ func RegisterStorageServiceAPIHandlerClient(ctx context.Context, mux *runtime.Se
 			return
 		}
 
-		forward_StorageServiceAPI_GetRawFile_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+		forward_StorageServiceAPI_GetRawFile_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -231,5 +266,5 @@ var (
 var (
 	forward_StorageServiceAPI_UploadBase64EncodedFile_0 = runtime.ForwardResponseMessage
 
-	forward_StorageServiceAPI_GetRawFile_0 = runtime.ForwardResponseStream
+	forward_StorageServiceAPI_GetRawFile_0 = runtime.ForwardResponseMessage
 )

@@ -53,18 +53,9 @@
         "operationId": "StorageServiceAPI_GetRawFile",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "A successful response.",
             "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/apiHttpBody"
-                },
-                "error": {
-                  "$ref": "#/definitions/rpcStatus"
-                }
-              },
-              "title": "Stream result of apiHttpBody"
+              "$ref": "#/definitions/apiHttpBody"
             }
           },
           "default": {
@@ -153,9 +144,6 @@
       "type": "object",
       "properties": {
         "uuid": {
-          "type": "string"
-        },
-        "extension": {
           "type": "string"
         },
         "size": {

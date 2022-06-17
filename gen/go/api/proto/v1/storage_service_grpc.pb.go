@@ -24,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StorageServiceAPIClient interface {
 	UploadBase64EncodedFile(ctx context.Context, in *Base64FileUploadRequest, opts ...grpc.CallOption) (*FileUploadResponse, error)
-	GetRawFile(ctx context.Context, in *GetRawFileRequest, opts ...grpc.CallOption) (StorageServiceAPI_GetRawFileClient, error)
+	GetRawFile(ctx context.Context, in *GetRawFileRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error)
 }
 
 type storageServiceAPIClient struct {
@@ -44,36 +44,13 @@ func (c *storageServiceAPIClient) UploadBase64EncodedFile(ctx context.Context, i
 	return out, nil
 }
 
-func (c *storageServiceAPIClient) GetRawFile(ctx context.Context, in *GetRawFileRequest, opts ...grpc.CallOption) (StorageServiceAPI_GetRawFileClient, error) {
-	stream, err := c.cc.NewStream(ctx, &StorageServiceAPI_ServiceDesc.Streams[0], "/storage_service_api.StorageServiceAPI/GetRawFile", opts...)
+func (c *storageServiceAPIClient) GetRawFile(ctx context.Context, in *GetRawFileRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error) {
+	out := new(httpbody.HttpBody)
+	err := c.cc.Invoke(ctx, "/storage_service_api.StorageServiceAPI/GetRawFile", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &storageServiceAPIGetRawFileClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type StorageServiceAPI_GetRawFileClient interface {
-	Recv() (*httpbody.HttpBody, error)
-	grpc.ClientStream
-}
-
-type storageServiceAPIGetRawFileClient struct {
-	grpc.ClientStream
-}
-
-func (x *storageServiceAPIGetRawFileClient) Recv() (*httpbody.HttpBody, error) {
-	m := new(httpbody.HttpBody)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // StorageServiceAPIServer is the server API for StorageServiceAPI service.
@@ -81,7 +58,7 @@ func (x *storageServiceAPIGetRawFileClient) Recv() (*httpbody.HttpBody, error) {
 // for forward compatibility
 type StorageServiceAPIServer interface {
 	UploadBase64EncodedFile(context.Context, *Base64FileUploadRequest) (*FileUploadResponse, error)
-	GetRawFile(*GetRawFileRequest, StorageServiceAPI_GetRawFileServer) error
+	GetRawFile(context.Context, *GetRawFileRequest) (*httpbody.HttpBody, error)
 	mustEmbedUnimplementedStorageServiceAPIServer()
 }
 
@@ -92,8 +69,8 @@ type UnimplementedStorageServiceAPIServer struct {
 func (UnimplementedStorageServiceAPIServer) UploadBase64EncodedFile(context.Context, *Base64FileUploadRequest) (*FileUploadResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadBase64EncodedFile not implemented")
 }
-func (UnimplementedStorageServiceAPIServer) GetRawFile(*GetRawFileRequest, StorageServiceAPI_GetRawFileServer) error {
-	return status.Errorf(codes.Unimplemented, "method GetRawFile not implemented")
+func (UnimplementedStorageServiceAPIServer) GetRawFile(context.Context, *GetRawFileRequest) (*httpbody.HttpBody, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRawFile not implemented")
 }
 func (UnimplementedStorageServiceAPIServer) mustEmbedUnimplementedStorageServiceAPIServer() {}
 
@@ -126,25 +103,22 @@ func _StorageServiceAPI_UploadBase64EncodedFile_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StorageServiceAPI_GetRawFile_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(GetRawFileRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _StorageServiceAPI_GetRawFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRawFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(StorageServiceAPIServer).GetRawFile(m, &storageServiceAPIGetRawFileServer{stream})
-}
-
-type StorageServiceAPI_GetRawFileServer interface {
-	Send(*httpbody.HttpBody) error
-	grpc.ServerStream
-}
-
-type storageServiceAPIGetRawFileServer struct {
-	grpc.ServerStream
-}
-
-func (x *storageServiceAPIGetRawFileServer) Send(m *httpbody.HttpBody) error {
-	return x.ServerStream.SendMsg(m)
+	if interceptor == nil {
+		return srv.(StorageServiceAPIServer).GetRawFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/storage_service_api.StorageServiceAPI/GetRawFile",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceAPIServer).GetRawFile(ctx, req.(*GetRawFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // StorageServiceAPI_ServiceDesc is the grpc.ServiceDesc for StorageServiceAPI service.
@@ -158,13 +132,11 @@ var StorageServiceAPI_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "UploadBase64EncodedFile",
 			Handler:    _StorageServiceAPI_UploadBase64EncodedFile_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "GetRawFile",
-			Handler:       _StorageServiceAPI_GetRawFile_Handler,
-			ServerStreams: true,
+			MethodName: "GetRawFile",
+			Handler:    _StorageServiceAPI_GetRawFile_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "api/proto/v1/storage_service.proto",
 }
