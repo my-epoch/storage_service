@@ -1,4 +1,4 @@
-module storage_service
+module github.com/my-epoch/storage_service
 
 go 1.18
 

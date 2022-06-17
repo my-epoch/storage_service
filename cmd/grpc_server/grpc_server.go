@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/my-epoch/object_service/pkg/consul"
 	"github.com/my-epoch/object_service/pkg/service_config"
-	"storage_service/internal/grpc_server"
+	"github.com/my-epoch/storage_service/internal/grpc_server"
 )
 
 func main() {

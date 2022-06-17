@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/my-epoch/api-gateway/pkg/logger"
 	"github.com/my-epoch/object_service/pkg/service_config"
+	gen "github.com/my-epoch/storage_service/gen/go/api/proto/v1"
+	"github.com/my-epoch/storage_service/internal/health_server"
+	"github.com/my-epoch/storage_service/internal/storage_service"
 	"google.golang.org/grpc"
 	gh "google.golang.org/grpc/health/grpc_health_v1"
 	"net"
-	gen "storage_service/gen/go/api/proto/v1"
-	"storage_service/internal/health_server"
-	"storage_service/internal/storage_service"
 )
 
 func Serve() {
